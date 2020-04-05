@@ -39,7 +39,7 @@ list(
                               paste("C.",HTML(data_soal$C[i])), 
                               paste("D.",HTML(data_soal$D[i])),
                               paste("E.",HTML(data_soal$E[i]))), 
-               selected = jawaban[i]), #data_soal$jawaban_inline[i]),
+               selected = NULL), #data_soal$jawaban_inline[i]),
   # f7Text(inputId = paste0("essay",i), label = NULL, placeholder = "Jawaban..."),
   # p(paste("Jawaban:", jawab(input[[paste0('pg',i)]]))),
   # br()
