@@ -103,7 +103,7 @@ server <- function(input, output, session){
   })
   nosoal <- reactiveVal(0)
   observeEvent(input$start, {
-    hide("start")
+    hideElement("start")
     showElement("submit")
     showElement("botbtn")
     nosoal(1)
