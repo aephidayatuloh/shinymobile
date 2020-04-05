@@ -104,8 +104,8 @@ server <- function(input, output, session){
   nosoal <- reactiveVal(0)
   observeEvent(input$start, {
     hide("start")
-    show("submit")
-    show("botbtn")
+    showElement("submit")
+    showElement("botbtn")
     nosoal(1)
     output$soals <- renderUI({
       uiOutput(paste0("soal",as.numeric(nosoal())))
@@ -117,9 +117,9 @@ server <- function(input, output, session){
       uiOutput(paste0("soal",as.numeric(nosoal())))
     })
   })
-  observeEvent(input$save, {
-    jawaban[as.numeric(nosoal())] <- input[[paste0('pg',as.numeric(nosoal()))]]
-  })
+  # observeEvent(input$save, {
+  #   jawaban[as.numeric(nosoal())] <- input[[paste0('pg',as.numeric(nosoal()))]]
+  # })
   observeEvent(input$nexts, {
     nosoal(nosoal()+1)
     output$soals <- renderUI({
