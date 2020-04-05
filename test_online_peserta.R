@@ -127,6 +127,7 @@ server <- function(input, output, session){
     })
   })
   observeEvent(input$submit, {
+    
     dijawab <- 29
     kosong <- 2
     shinyalert::shinyalert(title = "Anda yakin akan submit jawaban?", 
@@ -153,8 +154,14 @@ server <- function(input, output, session){
                                                          <div style='font-weight:bold;'>Nilai: %s</div>
                                                          </div>
                                                          </div>", reactiveValuesToList(res_auth)$nama, 
-                                                         reactiveValuesToList(res_auth)$user, benar, salah, kosong, nilai), html = TRUE, closeOnEsc = FALSE, closeOnClickOutside = 
-                                            FALSE, showConfirmButton = TRUE, showCancelButton = FALSE, confirmButtonText = "Selesai", cancelButtonText = "Batal", )
+                                                         reactiveValuesToList(res_auth)$user, benar, salah, kosong, nilai), html = TRUE, closeOnEsc = FALSE, 
+                                          closeOnClickOutside = FALSE, showConfirmButton = TRUE, showCancelButton = FALSE, 
+                                          confirmButtonText = "Selesai", cancelButtonText = "Batal", 
+                                          callbackR = function(x){
+                                            if(x == TRUE){
+                                              message("mklahd")
+                                            }
+                                          })
                              }
                            })
   })
