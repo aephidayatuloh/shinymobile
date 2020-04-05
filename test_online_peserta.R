@@ -57,7 +57,7 @@ set_labels(language = "en", "Please authenticate" = "Login", "Username:" = "NIS"
 ui <- secure_app(ui, enable_admin = TRUE, theme = "paper", status = "primary")
 
 server <- function(input, output, session){
-  jawaban <- NULL
+  jawaban <- rep(NA, 31)
   source("global.R")
   
   # call the server part
