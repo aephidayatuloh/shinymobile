@@ -3,6 +3,8 @@ library(shinymanager)
 library(shinyMobile)
 library(shinyjs)
 library(shinyalert)
+library(shinyWidgets)
+library(shinythemes)
 
 # credentials <- data.frame(
 #   user = c("161710001", "shiny", "shinymanager"), # mandatory
@@ -19,68 +21,130 @@ library(shinyalert)
 #   credentials_data = credentials,
 #   sqlite_path = "data/database.sqlite"
 # )
+set_labels(language = "en", "Please authenticate" = "", "Username:" = "NIS", "Password:" = "Password")
 
-ui <- f7Page(
+ui <- fluidPage(
+  auth_ui(
+    id = "auth",
+    # add image on top ?
+    tags_top = 
+      tags$div(
+        tags$img(
+          src = "logo.png", width = 120
+        ),
+        tags$h5("SMK Kesehatan Dewantara", style = "align:center"),
+        tags$h6("Sistem Manajemen Administrasi", style = "align:center")
+      ),
+    # add information on bottom ?
+    # tags_bottom = tags$div(
+    #   tags$p(
+    #     "For any question, please  contact ",
+    #     tags$a(
+    #       href = "mailto:someone@example.com?Subject=Shiny%20aManager",
+    #       target="_top", "administrator"
+    #     )
+    #   )
+    # ),
+    # change auth ui background ?
+    # https://developer.mozilla.org/fr/docs/Web/CSS/background
+    background  = "linear-gradient(rgba(0, 0, 255, 0.5),
+                       rgba(255, 255, 0, 0.5)),
+                       url('logo.png');repeat:false;", 
+    choose_language = FALSE
+  ),
   shinyjs::useShinyjs(),
   shinyalert::useShinyalert(),
-  tags$style('body{background-color:#ffffff;}'),
+  theme = shinytheme("paper"),
+  # tags$style('body{background-color:#ffffff;}'),
   title = "Nama Lembaga Pendidikan",
-  f7SingleLayout(
-    # navbar is mandatory
-    navbar = f7Navbar(
-      title = "Ujian Tengah Semester I 2019/2020", 
-      hairline = FALSE,
-      shadow = TRUE
-    ),
+  # f7Page(
+  fluidRow(
+      # navbar is mandatory
+      # navbar = f7Navbar(
+      #   title = "Ujian Tengah Semester I 2019/2020",
+      #   hairline = FALSE,
+      #   shadow = TRUE
+      # ),
+    h4("Ujian Tengah Semester I 2019/2020", style = "text-alin:center;"),
     uiOutput("user"),
-    # p("Text bla bla bla"),
-    f7Button("start", "Mulai"),
-    hidden(f7Button("submit", "Submit")),
+      # p("Text bla bla bla"),
+      # f7Button("start", "Mulai"),
+      # hidden(f7Button("submit", "Submit")),
     uiOutput("soals"),
     hidden(
       div(id="botbtn",
-          f7Segment(
-            f7Button("prevs", "<< Sebelum"),
-            f7Button("nexts", "Berikut >>")
-          )
-      )
+          div(style="display:inline-block;width:49%",
+              actionButton(inputId = "prevs", label = "<< Sebelum", width = "100%")
+              ),
+          div(style="display:inline-block;width:49%",
+              actionButton(inputId = "nexts", label = "Berikut >>", width = "100%")
+            )
+        )
+      ),
+      uiOutput("fabbtn")
     )
-  )
+  # )
 )
 set_labels(language = "en", "Please authenticate" = "Login", "Username:" = "NIS", "Password:" = "Password")
 
-ui <- secure_app(ui, enable_admin = TRUE, theme = "paper", status = "primary", 
-                 tags_top = tags$div(style="text-align:center;",
-                   h3(HTML("<strong>Sistem Manajemen Administrasi<br/>SMK Kesehatan Dewantara</strong>"))
-                 ))
+# ui <- secure_app(ui, enable_admin = TRUE, theme = "paper", status = "primary")
 
 server <- function(input, output, session){
   
-  source("global.R")
+  source("global2.R")
   
   # call the server part
   # check_credentials returns a function to authenticate users
-  res_auth <- secure_server(
+  # auth <- secure_server(
+  #   check_credentials = check_credentials(db = "data/database.sqlite")
+  # )
+  
+  # authentication module
+  auth <- callModule(
+    module = auth_server,
+    id = "auth",
     check_credentials = check_credentials(db = "data/database.sqlite")
   )
   
   observe({
-    res_auth
+    req(auth$user)
+    output$fabbtn <- renderUI({
+      fab_button(inputId = "fab", status = "primary", icon = icon("medrt"),
+                 actionButton(inputId = "start", label = NULL, tooltip = "Mulai", icon = icon("envelope-open-text"))#,
+                 # actionButton(inputId = "submit", label = NULL, tooltip = "Submit", icon = icon("send"))
+                 )
+    })
+  })
+  observeEvent(input$start, {
+    hideElement("start")
+    output$fabbtn <- renderUI({
+      fab_button(inputId = "fab", status = "primary", icon = icon("medrt"),
+                 # actionButton(inputId = "start", label = "Mulai", tooltip = "Mulai", icon = icon("envelope-open-text"))#,
+                 actionButton(inputId = "submit", label = NULL, tooltip = "Submit", icon = icon("send"))
+      )
+    })
+  })
+  
+  observe({
+    req(auth$user)
     shinyalert(text = sprintf("<div>Ujian Tengah Semester I<br/>
                      SMK Dewantara</div>
                      <br/>
              
                      Nama:<br/>%s<br/>
-                     NIS:<br/>%s<br/>", reactiveValuesToList(res_auth)$nama, reactiveValuesToList(res_auth)$user), html = TRUE)
+                     NIS:<br/>%s<br/>", auth$user_info$nama, auth$user_info$user), html = TRUE)
   })
   
   output$user <- renderUI({
     tagList(
-      fluidRow(
-        h5(sprintf("NIS: %s", reactiveValuesToList(res_auth)$user)),
-        h5(sprintf("Nama: %s", reactiveValuesToList(res_auth)$nama))
-      )
+      h5(sprintf("NIS: %s", auth$user_info$user)),
+      h5(sprintf("Nama: %s", auth$user_info$nama))
     )
+  })
+  
+  output$user_info <- renderPrint({
+    req(auth$user)
+    auth$user_info
   })
   
   
@@ -115,11 +179,17 @@ server <- function(input, output, session){
       uiOutput(paste0("soal",as.numeric(nosoal())))
     })
   })
-  jawaban <- eventReactive(input$save, {
-    jwb <- substr(input[[paste0('pg',as.numeric(nosoal()))]], start = 1, 1)
-    jawaban()[as.numeric(nosoal()),2] <- jwb
-    print(jwb)
-    jawaban()
+  output$radio <- renderPrint({
+    input[[paste0('pg',as.numeric(nosoal()))]]
+  })
+  observeEvent(input$save, {
+    jwb <- input[[paste0('pg',as.numeric(nosoal()))]]
+    if(!is.null(jwb)){
+      # jawaban()[as.numeric(nosoal()),2] <- jwb
+      shinyalert(title = "Disimpan", text = sprintf("Jawaban: %s", jwb))
+    } else {
+      shinyalert(text = "Silahkan pilih salah satu jawaban", type = "error")
+    }
   })
   observeEvent(input$nexts, {
     nosoal(nosoal()+1)
@@ -154,10 +224,10 @@ server <- function(input, output, session){
                                                          <span style='color:#f2df63'>Kosong: %s</span><br/>
                                                          <div style='font-weight:bold;'>Nilai: %s</div>
                                                          </div>
-                                                         </div>", reactiveValuesToList(res_auth)$nama, 
-                                                         reactiveValuesToList(res_auth)$user, benar, salah, kosong, nilai), html = TRUE, closeOnEsc = FALSE, 
+                                                         </div>", auth$user_info$nama, 
+                                                         auth$user_info$user, benar, salah, kosong, nilai), html = TRUE, closeOnEsc = FALSE, 
                                           closeOnClickOutside = FALSE, showConfirmButton = TRUE, showCancelButton = FALSE, 
-                                          confirmButtonText = "Selesai", cancelButtonText = "Batal", 
+                                          confirmButtonText = "Selesai & Keluar", cancelButtonText = "Batal", 
                                           callbackR = function(x){
                                             if(x == TRUE){
                                               # dbcon <- dbConnect(RSQLite::SQLite(), dataloc)

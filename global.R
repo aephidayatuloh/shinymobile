@@ -1,7 +1,7 @@
 library(RSQLite)
 # library(xlsx)
-library(dplyr)
-library(DT)
+# library(dplyr)
+# library(DT)
 
 # app/shiny/
 dataloc = "data/soal.sqlite"
@@ -17,6 +17,7 @@ getTable = function(tblnm, file.loc = "data/soal.sqlite")
 data_soal = getTable("bank_soal_mtk", dataloc)
 data_soal = data_soal %>% subset(gunakan == "T")
 kunci_jawaban = data_soal$kunci_jawaban
+jawaban <- data.frame(no = 1:length(kunci_jawaban), jawaban = rep(NA, length(kunci_jawaban)))
 
 jawab = function(input)
 {
