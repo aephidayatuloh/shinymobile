@@ -3,7 +3,6 @@ library(shinymanager)
 library(shinyMobile)
 library(shinyjs)
 library(shinyalert)
-library(shinyWidgets)
 library(shinythemes)
 
 # credentials <- data.frame(
@@ -48,8 +47,7 @@ ui <- fluidPage(
     # change auth ui background ?
     # https://developer.mozilla.org/fr/docs/Web/CSS/background
     background  = "linear-gradient(rgba(0, 0, 255, 0.5),
-                       rgba(255, 255, 0, 0.5)),
-                       url('logo.png');repeat:false;", 
+                       rgba(255, 255, 0, 0.5));", 
     choose_language = FALSE
   ),
   shinyjs::useShinyjs(),
@@ -58,33 +56,17 @@ ui <- fluidPage(
   # tags$style('body{background-color:#ffffff;}'),
   title = "Nama Lembaga Pendidikan",
   # f7Page(
-  fluidRow(
-      # navbar is mandatory
-      # navbar = f7Navbar(
-      #   title = "Ujian Tengah Semester I 2019/2020",
-      #   hairline = FALSE,
-      #   shadow = TRUE
-      # ),
-    h4("Ujian Tengah Semester I 2019/2020", style = "text-alin:center;"),
-    uiOutput("user"),
-      # p("Text bla bla bla"),
-      # f7Button("start", "Mulai"),
-      # hidden(f7Button("submit", "Submit")),
-    uiOutput("soals"),
-    hidden(
-      div(id="botbtn",
-          div(style="display:inline-block;width:49%",
-              actionButton(inputId = "prevs", label = "<< Sebelum", width = "100%")
-              ),
-          div(style="display:inline-block;width:49%",
-              actionButton(inputId = "nexts", label = "Berikut >>", width = "100%")
-            )
-        )
-      ),
-      uiOutput("fabbtn")
-    )
-  # )
+  h6("Ujian Tengah Semester I 2019/2020", style = "text-align:center;"),
+  div(id = "home",
+      uiOutput("user"),
+      p("Text bla bla bla")
+  ),
+  
+  uiOutput("soals"),
+  
+  uiOutput("fabbtn")
 )
+
 set_labels(language = "en", "Please authenticate" = "Login", "Username:" = "NIS", "Password:" = "Password")
 
 # ui <- secure_app(ui, enable_admin = TRUE, theme = "paper", status = "primary")
@@ -119,15 +101,16 @@ server <- function(input, output, session){
     hideElement("start")
     output$fabbtn <- renderUI({
       fab_button(inputId = "fab", status = "primary", icon = icon("medrt"),
-                 # actionButton(inputId = "start", label = "Mulai", tooltip = "Mulai", icon = icon("envelope-open-text"))#,
-                 actionButton(inputId = "submit", label = NULL, tooltip = "Submit", icon = icon("send"))
+                 actionButton(inputId = "submit", label = NULL, tooltip = "Submit", icon = icon("send")),
+                 actionButton(inputId = "prevs", label = NULL, tooltip = "Sebelumnya", icon = icon("chevron-circle-left")),
+                 actionButton(inputId = "nexts", label = NULL, tooltip = "Berikutnya", icon = icon("chevron-circle-right"))
       )
     })
   })
   
   observe({
     req(auth$user)
-    shinyalert(text = sprintf("<div>Ujian Tengah Semester I<br/>
+    shinyalert(text = sprintf("<div style'text-align:center;'>Ujian Tengah Semester I<br/>
                      SMK Dewantara</div>
                      <br/>
              
@@ -136,10 +119,12 @@ server <- function(input, output, session){
   })
   
   output$user <- renderUI({
-    tagList(
-      h5(sprintf("NIS: %s", auth$user_info$user)),
-      h5(sprintf("Nama: %s", auth$user_info$nama))
-    )
+    # tagList(
+      wellPanel(
+        h6(sprintf("NIS: %s", auth$user_info$user)),
+        h6(sprintf("Nama: %s", auth$user_info$nama))
+      )
+    # )
   })
   
   output$user_info <- renderPrint({
@@ -148,7 +133,7 @@ server <- function(input, output, session){
   })
   
   
-  lapply(1:31, function(i) {
+  lapply(1:length(kunci_jawaban), function(i) {
     # output[[paste0("no", i)]] <- renderUI({
     #   h5(paste("Soal no.", i))
     # })
@@ -165,51 +150,80 @@ server <- function(input, output, session){
   })
   nosoal <- reactiveVal(0)
   observeEvent(input$start, {
+    hideElement("home")
     hideElement("start")
     showElement("submit")
-    showElement("botbtn")
+    # showElement("botbtn")
     nosoal(1)
     output$soals <- renderUI({
       uiOutput(paste0("soal",as.numeric(nosoal())))
     })
   })
+  
   observeEvent(input$prevs, {
-    nosoal(nosoal()-1)
+    if(nosoal()-1 < 1){
+      nosoal(length(kunci_jawaban))
+    } else {
+      nosoal(nosoal()-1)
+    }
     output$soals <- renderUI({
       uiOutput(paste0("soal",as.numeric(nosoal())))
     })
   })
-  output$radio <- renderPrint({
-    input[[paste0('pg',as.numeric(nosoal()))]]
-  })
-  observeEvent(input$save, {
-    jwb <- input[[paste0('pg',as.numeric(nosoal()))]]
-    if(!is.null(jwb)){
-      # jawaban()[as.numeric(nosoal()),2] <- jwb
-      shinyalert(title = "Disimpan", text = sprintf("Jawaban: %s", jwb))
-    } else {
-      shinyalert(text = "Silahkan pilih salah satu jawaban", type = "error")
-    }
-  })
+  # output$radio <- renderPrint({
+  #   input[[paste0('pg',as.numeric(nosoal()))]]
+  # })
+  # observeEvent(input$save, {
+  #   jwb <- input[[paste0('pg',as.numeric(nosoal()))]]
+  #   if(!is.null(jwb)){
+  #     # jawaban()[as.numeric(nosoal()),2] <- jwb
+  #     shinyalert(title = "Disimpan", text = sprintf("Jawaban: %s", jwb))
+  #   } else {
+  #     shinyalert(text = "Silahkan pilih salah satu jawaban kemudian simpan", type = "error")
+  #   }
+  # })
   observeEvent(input$nexts, {
-    nosoal(nosoal()+1)
+    if(as.numeric(nosoal()+1) > length(kunci_jawaban)){
+      nosoal(1)
+    } else {
+      nosoal(nosoal()+1)
+    }
     output$soals <- renderUI({
       uiOutput(paste0("soal",as.numeric(nosoal())))
     })
   })
   observeEvent(input$submit, {
-    
-    dijawab <- 29
-    kosong <- 2
+    jwbn <- unlist(lapply(1:length(kunci_jawaban), function(i)ifelse(is.null(input[[paste0("pg",i)]]), "", input[[paste0("pg",i)]])))
+    dijawab <- sum(jwbn != "")
+    kosong <- length(kunci_jawaban) - dijawab
     shinyalert::shinyalert(title = "Anda yakin akan submit jawaban?", 
                            text = sprintf("Dijawab: %s | Kosong: %s<br/><br/><strong>PERHATIAN!</strong><br/>Jawaban Anda akan disimpan dan dinilai, kemudian ujian ini akan ditutup dan selesai. Tidak dapat diulang atau diperbaiki.", dijawab, kosong), 
                            html = TRUE,
                            closeOnClickOutside = FALSE, showCancelButton = TRUE, confirmButtonText = "Ya", cancelButtonText = "Batal", 
                            callbackR = function(x){
                              if(x == TRUE){
-                               benar <- 27
-                               salah <- 2
-                               nilai <- 80
+                               showModal(modalDialog("Tunggu sebentar...\nData Anda sedang diproses", title = NULL, easyClose = FALSE, footer = NULL, size = "l"))
+                               benar <- sum(kunci_jawaban == jwbn)
+                               salah <- sum(jwbn != "" & kunci_jawaban != jwbn)
+                               nilai <- benar
+                               
+                               x <- data.frame(NIS = auth$user_info$user, MAPEL = "MTK", 
+                                               NO_SOAL = 1:length(kunci_jawaban),
+                                               JAWABAN = jwbn, TANGGAL = Sys.time(), stringsAsFactors = FALSE)
+                               
+                               dbcon <- dbConnect(RSQLite::SQLite(), dataloc)
+                               rc <- dbSendStatement(conn = dbcon, statement = sprintf("DELETE FROM jawaban WHERE NIS = '%s' AND MAPEL = '%s'", auth$user_info$user, "MTK"))
+                               dbClearResult(rc)
+                               if(sprintf("tmp_jwbn_%s", auth$user_info$user) %in% dbListTables(dbcon))dbRemoveTable(dbcon, sprintf("tmp_jwbn_%s", auth$user_info$user))
+                               dbWriteTable(dbcon, name = sprintf("tmp_jwbn_%s", auth$user_info$user), value = x)
+                               rc <- dbSendStatement(conn = dbcon, statement = sprintf("INSERT INTO jawaban SELECT * FROM tmp_jwbn_%s;", auth$user_info$user))
+                               dbClearResult(rc)
+                               if(sprintf("tmp_jwbn_%s", auth$user_info$user) %in% dbListTables(dbcon))dbRemoveTable(dbcon, sprintf("tmp_jwbn_%s", auth$user_info$user))
+                               rc <- dbSendStatement(conn = dbcon, statement = sprintf("UPDATE siswa SET NO_TLP = '%s' WHERE NIS = '%s'", nilai, auth$user_info$user))
+                               dbClearResult(rc)
+                               dbDisconnect(dbcon)
+                               # print(jwbn)
+
                                shinyalert(title = NULL,
                                           text = sprintf("<div style='text-align:center;'>Ujian Tengah Semester I<br/>
                                                          SMK Kesehatan Dewantara<br/>
@@ -227,13 +241,10 @@ server <- function(input, output, session){
                                                          </div>", auth$user_info$nama, 
                                                          auth$user_info$user, benar, salah, kosong, nilai), html = TRUE, closeOnEsc = FALSE, 
                                           closeOnClickOutside = FALSE, showConfirmButton = TRUE, showCancelButton = FALSE, 
-                                          confirmButtonText = "Selesai & Keluar", cancelButtonText = "Batal", 
+                                          confirmButtonText = "Selesai & Logout", cancelButtonText = "Batal", 
                                           callbackR = function(x){
                                             if(x == TRUE){
-                                              # dbcon <- dbConnect(RSQLite::SQLite(), dataloc)
-                                              # rc <- dbSendStatement(conn = dbcon, statement = sprintf("UPDATE TABLE credentials SET "))
-                                              # dbDisconnect(dbcon)
-                                              # print(jawaban())
+                                              # showNotification("Tunggu sebentar...\nData Anda sedang diproses", closeButton = FALSE, type = "message")
                                               session$reload()
                                             }
                                           })
