@@ -1,3 +1,3 @@
 # shinymobile
 
-Build shiny application for mobile
+Aplikasi shiny untuk membuat ujian online
