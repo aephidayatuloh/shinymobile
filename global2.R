@@ -1,4 +1,4 @@
-library(RSQLite)
+library(MySQL)
 # library(xlsx)
 # library(dplyr)
 # library(DT)
@@ -6,17 +6,21 @@ library(RSQLite)
 # app/shiny/
 dataloc = "data/soal.sqlite"
 
-getTable = function(tblnm, file.loc = "data/soal.sqlite")
+getTable = function(tblnm)
 {
-  dbcon <- dbConnect(RSQLite::SQLite(), file.loc)
+  dbcon <- dbConnect(MySQL(), 
+                     dbname = "dewantara", 
+                     host = "192.168.8.100", 
+                     username = "user1", 
+                     password = "P@ssw0rd")
   tbl_dt <- dbReadTable(dbcon, tblnm)
   dbDisconnect(dbcon)
   return(tbl_dt)
 }
 
-data_soal <- getTable("bank_soal_mtk", dataloc)
-data_soal <- data_soal %>% subset(gunakan == "T")
-kunci_jawaban <- data_soal$kunci_jawaban[1:10]
+data_soal <- getTable("soal_mtk")
+data_soal <- data_soal %>% subset(Gunakan == "T")
+kunci_jawaban <- data_soal$KunciJawaban
 
 jawab = function(input)
 {
@@ -29,7 +33,7 @@ soal = function(i, input)
 list(
   wellPanel(
     h5(paste("Soal no.", i), style = "font-weight:bold;font-size:130%;"),
-    p(withMathJax(HTML(data_soal$soal[i]))), 
+    p(withMathJax(HTML(data_soal$Soal[i]))), 
   # hidden(f7Text("gunakan_gambar", label = NULL, value = data_soal$gunakan_gambar[i])),
   # hidden(f7Text("type_soal", label = NULL, value = data_soal$type_soal[i])),
   # plotOutput("pgimg"),
@@ -92,8 +96,9 @@ list(
               paste(HTML(data_soal$E[i]))
               )),
   # fab_button(inputId = "fab", status = "primary", icon = icon("medrt"),
-  #            actionButton(inputId = "start", label = NULL, tooltip = "Mulai", icon = icon("envelope-open-text"))#,
-  #            # actionButton(inputId = "submit", label = NULL, tooltip = "Submit", icon = icon("send"))
+  #            actionButton(inputId = "submit", label = NULL, tooltip = "Submit", icon = icon("send")),
+  #            actionButton(inputId = "prevs", label = NULL, tooltip = "Sebelumnya", icon = icon("chevron-circle-left")),
+  #            actionButton(inputId = "nexts", label = NULL, tooltip = "Berikutnya", icon = icon("chevron-circle-right"))
   # ),
   style="background:#fff;"
   )
